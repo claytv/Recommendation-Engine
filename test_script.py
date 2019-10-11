@@ -12,7 +12,7 @@ df_content = df_content.drop_duplicates(subset='article_id', keep = 'first')
 
 def email_mapper():
     '''
-    Creates
+    OUTPUT
     Description:
     This is a data wrangling function that assigns every unique email a unique
         user id which makes the data easier to work with later
@@ -36,8 +36,24 @@ email_encoded = email_mapper()
 del df['email']
 df['user_id'] = email_encoded
 
-user1 = User(1, df, df_content)
+user10 = User(10, df, df_content)
 
-print(user1.other_user_recommendation(10)[1])
+print("\nThe top 10 trending articles are: ")
+for article in user10.most_popular_articles(10, ids=False):
+    print(article)
+
+print("\nThe 10 article ids for the user based recommendation are: ")
+for article_id in user10.other_user_recommendation(10,ids=True):
+    print(article_id)
+
+print("\nThe 5 article ids for the content based recommendation are: ")
+for article in user10.content_based_recommendation(5):
+    print(article)
+
+print("\nThe 7 most similar user ids are: " )
+for user_id in user10.similar_users(7):
+    print(user_id)
+
+
 
 
