@@ -11,7 +11,7 @@ from nltk.stem import WordNetLemmatizer
 
 class User:
     '''
-    User
+    User w
 
     '''
     def __init__(self, user_id, interaction_df, content_df):
@@ -46,12 +46,15 @@ class User:
         OUTPUT:
         article_ids or article_names - list of the recommended articles id or name
         '''
-        if ids:
-            article_ids = user_recs(self.user_id, self.interaction_df, self.user_item, n_recs)[0]
-            return article_ids
+        if len(get_user_articles(self.interaction_df,self.user_item)[0]) < 1:
+            return self.most_popular_articles(n_recs, ids)
         else:
+            article_ids = user_recs(self.user_id, self.interaction_df, self.user_item, n_recs)[0]
             article_names = user_recs(self.user_id, self.interaction_df, self.user_item, n_recs)[1]
-            return article_names
+            if ids:
+                return article_ids
+            else:
+                return article_names
 
     def content_based_recommendation(self, n_recs, ids=False):
         '''
@@ -62,12 +65,15 @@ class User:
         OUTPUT:
         article_ids or article_names - list of the recommended articles id or name
         '''
-        if ids:
-            article_ids = make_content_recs(self.user_id, self.interaction_df, self.content_df, self.user_item, n_recs)[0]
-            return article_ids
+        if len(get_user_articles(self.interaction_df,self.user_item)[0]) < 1:
+            return self.most_popular_articles(n_recs, ids)
         else:
+            article_ids = make_content_recs(self.user_id, self.interaction_df, self.content_df, self.user_item, n_recs)[0]
             article_names = make_content_recs(self.user_id, self.interaction_df, self.content_df, self.user_item, n_recs)[1]
-            return article_names
+            if ids:
+                return article_ids
+            else:
+                return article_names
 
     def similar_users(self, n_users):
         '''
