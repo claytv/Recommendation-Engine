@@ -11,14 +11,16 @@ from nltk.stem import WordNetLemmatizer
 
 class User:
     '''
-    User w
-
+    Can return most popular articles in community, similar user based recommendations,
+    content based recommendations and
     '''
     def __init__(self, user_id, interaction_df, content_df):
 
-        self.user_id = user_id
-        self.interaction_df = interaction_df
-        self.content_df = content_df
+        self.user_id = user_id  # Identifier for user
+        self.interaction_df = interaction_df  # User interactions with articles
+        self.content_df = content_df  # Article ids and titles
+
+        # Creates user item matrix to be used in multiple helper functions
         self.user_item = create_user_item_matrix(self.interaction_df)
 
     def most_popular_articles(self, n_articles, ids=False):
@@ -31,10 +33,10 @@ class User:
         article_ids or article_names - list of the most popular articles id or name
         '''
         if ids:
-            article_ids = get_top_article_ids(n_articles, self.interaction_df)
+            article_ids = get_top_article_ids(n_articles, self.interaction_df)  # Gets top article ids
             return article_ids
         else:
-            article_names = get_top_articles(n_articles, self.interaction_df)
+            article_names = get_top_articles(n_articles, self.interaction_df)  # Gets top article names
             return article_names
 
     def other_user_recommendation(self, n_recs, ids=False):
@@ -46,7 +48,9 @@ class User:
         OUTPUT:
         article_ids or article_names - list of the recommended articles id or name
         '''
-        if len(get_user_articles(self.interaction_df,self.user_item)[0]) < 1:
+        # Checks if the user has seen at least one article
+        # If they haven't, returns most popular articles
+        if len(get_user_articles(self.user_id, self.interaction_df, self.user_item)[0]) < 1:
             return self.most_popular_articles(n_recs, ids)
         else:
             article_ids = user_recs(self.user_id, self.interaction_df, self.user_item, n_recs)[0]
@@ -65,7 +69,9 @@ class User:
         OUTPUT:
         article_ids or article_names - list of the recommended articles id or name
         '''
-        if len(get_user_articles(self.interaction_df,self.user_item)[0]) < 1:
+        # Checks if the user has seen at least one article
+        # If they haven't, returns most popular articles
+        if len(get_user_articles(self.user_id, self.interaction_df, self.user_item)[0]) < 1:
             return self.most_popular_articles(n_recs, ids)
         else:
             article_ids = make_content_recs(self.user_id, self.interaction_df, self.content_df, self.user_item, n_recs)[0]
@@ -83,6 +89,7 @@ class User:
         OUTPUT:
         similar_users - (list) list of the user ids of other users with similar reading habits
         '''
+        # Finds users with similar reading habits to the user
         similar_users = get_top_sorted_users(self.user_id, self.interaction_df, self.user_item)['neighbor_id'].values
         similar_users = similar_users[:n_users]
         return similar_users
@@ -100,7 +107,7 @@ def get_top_articles(n, df_interaction):
     top_articles - (list) A list of the top 'n' article titles
 
     '''
-    # Your code here
+
     n_article_interactions = df_interaction['article_id'].value_counts().head(n)
     top_idx = n_article_interactions.index
     top_articles = list(df_interaction.loc[df_interaction['article_id'].isin(top_idx), :]['title'].unique())
@@ -136,10 +143,11 @@ def create_user_item_matrix(df_interaction):
     Return a matrix with user ids as rows and article ids on the columns with 1 values where a user interacted with
     an article and a 0 otherwise
     '''
-    # Fill in the function here
     user_item = df_interaction.groupby(['user_id', 'article_id'])['article_id'].count().unstack()
     user_item = user_item.fillna(0)
 
+    # At this user_item is a dataframe with the number of times a user has seen an article
+    # This will mess up other calculations so code below turns anything that isn't 0 to 1
     for column in user_item.columns:
         user_item[column] = user_item[column].apply(lambda x: x if x == 0 else 1)
     return user_item
@@ -152,23 +160,29 @@ def find_similar_users(user_id, user_item):
     user_item - (dataframe) matrix that indicates what articles each user has seen
 
     OUTPUT:
-    similar_users - (list) users
+    similar_users - (list) users similar to user_id
 
     Description:
     Computes the similarity of every pair of users based on the dot product
     Returns an ordered
     '''
+    # Creates a dataframe with users on rows and columns
+    # Value in each cell is the number of articles the 2  users have each read
     sim_users = np.dot(user_item, user_item.T)
     index = range(1, sim_users.shape[0] + 1)
     sim_users = pd.DataFrame(sim_users, index=index, columns=index)
 
+    # Finds the row of the matrix with the desired id
     similar = sim_users[sim_users.index == user_id]
 
+    # Drops the user column corresponding to itself
     similar = similar.drop(user_id, axis=1)
-    similar = similar.T.sort_values(user_id, ascending=False)
-    similar_names = similar.index
 
-    return list(similar_names)
+    # Sorts the values by similarity, highest first
+    similar = similar.T.sort_values(user_id, ascending=False)
+    similar_users = similar.index
+
+    return list(similar_users)
 
 
 def user_recs(user_id, df_interaction, user_item, m=10):
@@ -187,19 +201,25 @@ def user_recs(user_id, df_interaction, user_item, m=10):
     Returns recommendations for a user by returning the items that users similar to them have seen
     but the user has not
     '''
+    # Gets users similar to the user
     similar_users = get_top_sorted_users(user_id, df_interaction, user_item)
+
+    # Gets the articles seen by the user
     user_articles_seen = get_user_articles(user_id, df_interaction, user_item)[0]
     recs = []
+
+    # Loops through each of the similar users until m recs are made
     for user in similar_users['neighbor_id']:
         articles_seen = get_user_articles(user, df_interaction, user_item)[0]
-        if len(recs) < m:
-            for item in articles_seen:
-                if item not in user_articles_seen:
+        if len(recs) < m:  # Checks to see if m recs have been made
+            for item in articles_seen: # loops through the articles this user has seen
+                if item not in user_articles_seen:  # Checks to see if the user has seen the item
                     recs.append(item)
         else:
             break
+
     recs = recs[:m]
-    rec_names = get_article_names(recs,df_interaction)
+    rec_names = get_article_names(recs, df_interaction) # Gets the names for the article ids
 
     return recs, rec_names
 
@@ -218,24 +238,25 @@ def get_top_sorted_users(user_id, df_interaction, user_item):
                     num_interactions - the number of articles viewed by the user
                     *sorted by similarity and num_interactions
     '''
-
+    # Number of times each user has viewed any article
     df_article_views = df_interaction[['user_id', 'article_id']].groupby(['user_id']).count()
 
+    # creates an array of users and their similarity to the user
     similarity = []
     for user in range(1, user_item.shape[0] + 1):
-        sim = np.dot(user_item.loc[1], user_item.loc[user])
+        sim = np.dot(user_item.loc[user_id], user_item.loc[user])
         similarity.append((user, sim))
 
     # sort by similarity
     similarity.sort(key=lambda x: x[1], reverse=True)
 
-    # create dataframe
+    # creates dataframe from array
     df_sims = pd.DataFrame()
     df_sims['user_id'] = [x[0] for x in similarity]
     df_sims['similarity'] = [x[1] for x in similarity]
     df_sims = df_sims.set_index('user_id')
 
-    # dataframe with users sorted by closest followed by most articles viewed
+    # creates dataframe with users sorted by closest followed by most articles viewed
     neighbors_df = pd.merge(df_sims, df_article_views, on='user_id')
     neighbors_df = neighbors_df[['similarity', 'article_id']]
     neighbors_df = neighbors_df.reset_index()
@@ -257,8 +278,11 @@ def get_user_articles(user_id, df_interaction, user_item):
     OUTPUT:
     article_ids - (list) a list of the article ids seen by the user
     article_names - (list) a list of article names associated with the list of article ids
+
+    Description:
+    Finds the articles that a user has read
     '''
-    # Your code here
+
     article_ids = user_item.columns.values[list(user_item.loc[user_id,] == 1)]
     article_ids = article_ids.astype(str)
     article_names = get_article_names(article_ids,df_interaction)
@@ -274,9 +298,7 @@ def get_article_names(article_ids, df_interaction):
     OUTPUT:
     article_names - (list) a list of article names associated with the list of article ids
     '''
-    # Your code here
 
-    #article_names = df_interaction.loc[df_interaction['article_id'].isin(article_ids)]['title'].unique()
     article_names = df_interaction[df_interaction['article_id'].isin(article_ids)]['title'].drop_duplicates().values.tolist()
 
     return article_names
@@ -291,35 +313,45 @@ def make_content_recs(user_id,df_interaction, df_content, user_item, n_recs):
     user_item - (dataframe) matrix that indicates what articles each user has seen
 
     OUTPUT:
-    list(recs) - (list) recommended article id's
-    list(rec_names) - (list) recommended article names
+    recs[:n_recs] - (list) recommended article id's
+    rec_names[:n_recs] - (list) recommended article names
 
     Description:
     Compares words in the titles of the articles a user has seen with the titles of
     the ones he has not seen and returns the titles with the most similarity
     '''
+    # Gets the articles that a user has already read
     already_seen = get_user_articles(user_id, df_interaction, user_item)[1]
+
+    # Tokenizes each titles and adds it to a list
     token_titles = []
-
     for title in already_seen:
-        clean_token = clean_and_tokenize(title)
-        token_titles.append(clean_token)
+        clean_tokens = clean_and_tokenize(title)
+        token_titles.append(clean_tokens)
 
+    # Goes through each title and forms a unique list of tokens
     unique_token_titles = []
     for title in token_titles:
         for token in title:
             if token not in unique_token_titles:
                 unique_token_titles.append(token)
 
+    # Creates data frame of each article in df_content and its title
     titles_df = df_content[['article_id', 'doc_full_name']]
     titles_df.index = df_content['article_id']
     titles_df = titles_df.rename(columns={"doc_full_name": "title"})
+
+    # Creates a new column with the tokens of the corresponding title
     titles_df['title_tokens'] = titles_df['title'].apply(lambda x: clean_and_tokenize(x))
     titles_df = titles_df.drop('title', axis=1)
-    lam_intersect = lambda x: len(set(x).intersection(unique_token_titles))
-    titles_df['user_similar_tokens'] = titles_df['title_tokens'].apply(lam_intersect)
-    titles_df = titles_df.sort_values('user_similar_tokens', ascending=False)
 
+    # Gets the similarity between the users previous reading history and the title
+    # of the article for each article
+    lam_intersect = lambda x: len(set(x).intersection(unique_token_titles))  # Weird way to do this lambda function
+    titles_df['user_similar_tokens'] = titles_df['title_tokens'].apply(lam_intersect)  # couldnt think of better way
+    titles_df = titles_df.sort_values('user_similar_tokens', ascending=False)  # Sorts by similarity
+
+    # Finds the articles that the user hasn't already seen
     already_seen_ids = get_user_articles(user_id, df_interaction, user_item)[0]
     recs = titles_df['article_id'][~titles_df['article_id'].isin(already_seen_ids)]
     recs = list(recs.values)
@@ -336,14 +368,23 @@ def clean_and_tokenize(text):
     OUTPUT:
     filtered_tokens - (list) cleaned tokens
     '''
+    # Removes punctuation
     text = re.sub(r'[^\w\s]', '', text)
+
+    # Tokenizes by word
     word_tokens = word_tokenize(text)
+
+    # Can be used to reduce a word to its root
     lemmatizer = WordNetLemmatizer()
+
+    # takes each token and reduces it to its root, cleans it
+    # and then appends it to the list clean_tokens
     clean_tokens = []
     for token in word_tokens:
         clean_token = lemmatizer.lemmatize(token).lower().strip()
         clean_tokens.append(clean_token)
 
+    # Removes words with little to no meaning ( it, the, and etc. ) 
     stop_words = set(stopwords.words('english'))
     filtered_tokens = [w for w in clean_tokens if not w in stop_words]
 
