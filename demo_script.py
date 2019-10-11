@@ -12,13 +12,12 @@ df_content = df_content.drop_duplicates(subset='article_id', keep = 'first')
 
 def email_mapper():
     '''
-    OUTPUT
+    OUTPUT:
+    a column with the corresponding user_id to each email 
     Description:
     This is a data wrangling function that assigns every unique email a unique
         user id which makes the data easier to work with later
     '''
-
-
     coded_dict = dict()
     cter = 1
     email_encoded = []
