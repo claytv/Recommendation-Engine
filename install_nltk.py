@@ -1,3 +1,6 @@
+# I had some trouble using the nltk.download() function. I kept recieving a certificate error. 
+# I found a solution on stack overflow the link is in README.md
+
 import nltk
 
 import ssl
