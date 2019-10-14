@@ -12,7 +12,7 @@ from nltk.stem import WordNetLemmatizer
 class User:
     '''
     Can return most popular articles in community, similar user based recommendations,
-    content based recommendations and
+    content based recommendations ( title only ) and users with similar reading habits
     '''
     def __init__(self, user_id, interaction_df, content_df):
 
