@@ -13,9 +13,27 @@ The goal of this project was to get an introduction into the different kinds of 
 * user.py - File containing the class 'User' 
 
 # Data
-## Interaction Data
+## Interaction Data Before Mapping 'email' to 'user_id'
+![Interaction Before](interaction1.png)
+## Interaction Data with 'user_id'
+![Interaction After](interaction2.png)
 
 ## Content Data
+![Content](content.png)
+
+# User Class
+## Initialize 
+```python
+user = User(user_id, interaction_df, content_df)
+```
+## Methods 
+```python
+user.most_popular_articles(n_articles, ids=False)
+user.other_user_recommendation(n_recs, ids=False)
+user.conent_based_recommendation(n_recs, ids=False)
+user.similar_users(n_users)
+``` 
+Setting ```ids=True``` will return article ids instead of article names
 
 # Recommendations
 ## Rank Based Recommendation 
@@ -31,4 +49,8 @@ This recommendation tokenizes every article that a user has watched and then com
 * This recommendation has a bias towards articles with longer title names
 * This recommendation does not properly account for users who view multiple articles with similarly worded titles
 
-https://stackoverflow.com/questions/41929044/ssl-certificate-verify-failed-certificate-verify-failed-ssl-c-661
+
+# Summary
+This project was a great intro into the many different ways that recommendations can be made. Somethings that I could have done differently are:  
+* Make the class Recommendation instead of User. I debated this but chose User because it felt like a better object oriented approach. If I went with Recommendation the user_id variable would no longer be a part of the class and become a parameter for the recommendations method. My approach allows each user to have its own instance and then potentially add other variables depending on the situation. Having user be a parent class for Recommendation may also work here.
+* Include the body of the article in the content based recommendation rather than just the title. Because this was my first time creating a recommendation engine I wanted to keep it simple.
