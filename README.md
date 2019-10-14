@@ -5,6 +5,12 @@ Recommendation engine created for the Udacity Data Scientist Nanodegree
 # Overview 
 The goal of this project was to get an introduction into the different kinds of recommendations and how they work. The project was sponsored by IBM and they provided the data, one file being records of every user-article interaction and the other being information about each article. The project through Udacity required us to implement rank based and user-user based recommendation functions. In addition to these functions I chose to implement a content based recommendation and combined all of these functions into the 'User' class.  
 
+# Requirements
+* Python - 3.7
+* NLTK - 3.4.5
+* Numpy - 1.17.2
+* Pandas - 0.25.1
+
 # Files
 * Data - Folder containg data in .csv files
 * demo_script.py - Example using the User class
