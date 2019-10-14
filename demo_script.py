@@ -9,7 +9,7 @@ del df['Unnamed: 0']
 del df_content['Unnamed: 0']
 df_content = df_content.drop_duplicates(subset='article_id', keep = 'first')
 
-
+# Udacity provided this function
 def email_mapper():
     '''
     OUTPUT:
